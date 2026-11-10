@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101014">
+<title>My Gym Progress</title>
+<style>
+:root{color-scheme:dark;--bg:#101014;--panel:#1b1b22;--muted:#a6a6b1;--red:#ff454f;--line:#303039}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f5f7;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 14px calc(24px + env(safe-area-inset-bottom))}
+header{padding:22px 4px 14px}h1{font-size:26px;margin:0 0 5px}h2{font-size:19px;margin:4px 0 12px}.muted{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:8px;overflow:auto;padding:5px 0 14px}.tab,button{border:0;border-radius:12px;padding:11px 14px;background:#292932;color:white;font-weight:650}.tab.active,button.primary{background:var(--red);color:white}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.exercise{padding:12px 0;border-bottom:1px solid var(--line)}.exercise:last-child{border:0}
+.exhead{display:flex;justify-content:space-between;gap:8px;align-items:start}.exname{font-weight:700}.prescription{font-size:12px;color:var(--muted);white-space:nowrap}
+.setrow{display:grid;grid-template-columns:32px 1fr 1fr 42px;gap:7px;align-items:center;margin-top:8px}
+input{min-width:0;width:100%;background:#111116;color:white;border:1px solid #3b3b45;border-radius:9px;padding:10px;font-size:15px}
+label{font-size:11px;color:var(--muted);display:block;margin:8px 0 4px}
+.small{font-size:12px;color:var(--muted)}.done{background:#183c2b!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#24242c;padding:12px;border-radius:12px}.stat strong{font-size:22px;display:block}
+button{cursor:pointer}button.secondary{background:#33333d}button.tiny{padding:8px 10px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.hidden{display:none}.bar{height:8px;background:#333;border-radius:9px;overflow:hidden}.bar span{display:block;height:100%;background:var(--red)}
+textarea{width:100%;background:#111116;color:white;border:1px solid #3b3b45;border-radius:10px;padding:10px}
+footer{padding:18px 4px;color:var(--muted);font-size:12px;line-height:1.5}
+</style></head>
+<body>
+<header><h1>MY GYM <span style="color:var(--red)">PROGRESS</span></h1><div class="muted">Ton carnet d'entraînement · stockage local</div></header>
+<div class="grid">
+ <div class="stat"><span class="muted">Poids actuel</span><strong id="weightStat">— kg</strong><span class="small">Dernière saisie</span></div>
+ <div class="stat"><span class="muted">Séances enregistrées</span><strong id="sessionStat">0</strong><span class="small">Historique local</span></div>
+</div>
+<nav class="tabs" id="tabs"></nav>
+<main id="content"></main>
+<section class="card">
+ <h2>Suivi corporel</h2>
+ <div class="grid"><div><label>Poids (kg)</label><input id="weight" type="number" step=".1" placeholder="ex. 89.5"></div><div><label>Date</label><input id="weightDate" type="date"></div></div>
+ <div class="actions"><button class="primary" onclick="saveWeight()">Enregistrer le poids</button></div>
+ <div id="weightHistory" class="small" style="margin-top:12px"></div>
+</section>
+<section class="card">
+ <h2>Cardio – Jour 3</h2>
+ <div class="grid"><div><label>Durée (min)</label><input id="cardioDuration" type="number" placeholder="30"></div><div><label>Distance (km)</label><input id="cardioDistance" type="number" step=".1" placeholder="ex. 4.2"></div><div><label>Calories (optionnel)</label><input id="cardioCalories" type="number" placeholder="250"></div><div><label>Type</label><input id="cardioType" placeholder="Marche, vélo…"></div></div>
+ <label>Date</label><input id="cardioDate" type="date"><div class="actions"><button class="primary" onclick="saveCardio()">Enregistrer le cardio</button></div><div id="cardioHistory" class="small" style="margin-top:10px"></div>
+</section>
+<section class="card">
+ <h2>Historique & sauvegarde</h2><div id="history" class="small">Aucune séance enregistrée.</div>
+ <div class="actions"><button class="secondary" onclick="exportData()">Exporter mes données</button><button class="secondary" onclick="document.getElementById('importFile').click()">Importer une sauvegarde</button><input id="importFile" class="hidden" type="file" accept="application/json" onchange="importData(event)"></div>
+ <p class="small">Les données restent dans le stockage du navigateur sur cet appareil. Exporte régulièrement une sauvegarde pour éviter toute perte.</p>
+</section>
+<footer>Version de suivi personnelle. Les charges et répétitions proposées peuvent être modifiées selon ton niveau et les consignes de ton programme. Le cardio se renseigne après chaque séance de musculation.</footer>
+<script>
+const workouts=[
+ {id:"pushA",name:"Jour 1 · PUSH A",focus:"Pectoraux · Épaules · Triceps",items:[
+ ["Développé couché barre",4,"6–10"],["Développé incliné haltères",3,"8–12"],["Chest press convergente",3,"8–12"],["Développé militaire",3,"8–12"],["Élévations latérales",4,"12–20"],["Extension triceps poulie",3,"10–15"],["Extension triceps au-dessus de la tête",2,"12–15"]]},
+ {id:"pullA",name:"Jour 2 · PULL A",focus:"Dos · Arrière d'épaules · Biceps",items:[
+ ["Rowing barre pronation",2,"8–12"],["Rowing barre supination",2,"8–12"],["Tirage vertical prise neutre",3,"10–12"],["Rowing poitrine appuyée",3,"10–12"],["Oiseau machine",3,"12–15"],["Curl barre EZ",3,"10–12"],["Curl incliné haltères",2,"10–12"]]},
+ {id:"rest",name:"Jour 3 · REPOS / RÉCUPÉRATION",focus:"Récupération entre les séances",items:[]},
+ {id:"pushB",name:"Jour 4 · PUSH B",focus:"Pectoraux · Deltoïdes latéraux · Triceps",items:[
+ ["Développé incliné barre",4,"6–10"],["Développé haltères à plat",3,"8–12"],["Écartés aux poulies",3,"12–15"],["Shoulder press machine",3,"8–12"],["Élévations latérales haltères",4,"12–20"],["Barre au front",3,"8–12"],["Extension triceps unilatérale",2,"12–15"]]},
+ {id:"pullB",name:"Jour 5 · PULL B",focus:"Dos · Arrière d'épaules · Biceps",items:[
+ ["Tirage vertical prise large",3,"8–12"],["Rowing T-bar support poitrine",4,"8–12"],["Rowing poulie unilatéral",3,"10–12"],["Pull-over poulie",3,"12–15"],["Face pull",3,"12–20"],["Curl pupitre",3,"10–12"],["Curl marteau corde",3,"10–15"]]},
+ {id:"legsB",name:"Jour 6 · LEGS B",focus:"Jambes complètes · Chaîne postérieure",items:[
+ ["Hack squat",4,"8–12"],["Bulgarian split squat",3,"8–12 / jambe"],["Hip thrust",3,"8–12"],["Leg curl couché",4,"10–15"],["Extension lombaire à 45°",2,"12–15"],["Mollets assis",4,"12–20"],["Relevés de jambes suspendu",3,"10–15"]]},
+ {id:"rest",name:"Jour 7 · REPOS",focus:"Récupération",items:[]}
+];
+let data=JSON.parse(localStorage.getItem("gymprogress_v1")||'{"sessions":[],"weights":[],"cardio":[]}');
+let active=0;
+const today=()=>new Date().toISOString().slice(0,10);
+function persist(){localStorage.setItem("gymprogress_v1",JSON.stringify(data));updateStats()}
+function updateStats(){document.getElementById("sessionStat").textContent=data.sessions.length;let w=data.weights.at(-1);document.getElementById("weightStat").textContent=w?w.value+" kg":"— kg";document.getElementById("weightHistory").innerHTML=data.weights.slice(-6).reverse().map(x=>`${x.date} · <b>${x.value} kg</b>`).join("<br>")||"Aucun poids enregistré.";document.getElementById("cardioHistory").innerHTML=data.sessions.filter(s=>s.cardio&&s.cardio.duration).slice(-8).reverse().map(x=>`${x.date} · ${x.name} · ${x.cardio.type||"Cardio"} · ${x.cardio.duration} min · ${x.cardio.distance||"—"} km`).join("<br>")||"Aucun cardio enregistré après une séance." ;document.getElementById("history").innerHTML=data.sessions.slice(-8).reverse().map(s=>`${s.date} · <b>${s.name}</b> · ${s.total} séries${s.cardio&&s.cardio.duration?` · Cardio ${s.cardio.duration} min`:''} enregistrées`).join("<br>")||"Aucune séance enregistrée."}
+function render(){document.getElementById("tabs").innerHTML=workouts.map((w,i)=>`<button class="tab ${i===active?'active':''}" onclick="active=${i};render()">${w.name.replace("Jour ","J").replace(" · "," ")}</button>`).join("");let w=workouts[active],c=document.getElementById("content");if(w.id==="rest"){c.innerHTML=`<section class="card"><h2>${w.name}</h2><p>${w.focus}</p><p class="muted">Journée de récupération. Le cardio sera désormais ajouté à la fin de chaque séance de musculation.</p></section>`;return}
+c.innerHTML=`<section class="card"><h2>${w.name}</h2><div class="muted">${w.focus}</div><label>Date de la séance</label><input id="sessionDate" type="date" value="${today()}">${w.items.map((it,i)=>`<div class="exercise"><div class="exhead"><div class="exname">${i+1}. ${it[0]}</div><div class="prescription">${it[1]} séries · ${it[2]} reps</div></div>${Array.from({length:it[1]},(_,j)=>`<div class="setrow"><span class="small">S${j+1}</span><div><label>Charge (kg)</label><input type="number" step=".25" inputmode="decimal" id="w${i}_${j}" placeholder="kg"></div><div><label>Répétitions</label><input type="number" inputmode="numeric" id="r${i}_${j}" placeholder="reps"></div><button class="tiny secondary" id="d${i}_${j}" onclick="toggleDone(${i},${j})">✓</button></div>`).join("")}</div>`).join("")}<h2 style="margin-top:18px">Cardio après la séance</h2><div class="muted">Enregistre ici ton cardio réalisé après cet entraînement.</div><div class="grid"><div><label>Durée (min)</label><input id="sessionCardioDuration" type="number" inputmode="numeric" placeholder="20"></div><div><label>Distance (km)</label><input id="sessionCardioDistance" type="number" step=".1" inputmode="decimal" placeholder="3.0"></div><div><label>Calories (optionnel)</label><input id="sessionCardioCalories" type="number" inputmode="numeric" placeholder="150"></div><div><label>Type de cardio</label><input id="sessionCardioType" placeholder="Marche, vélo…"></div></div><label>Notes de séance</label><textarea id="notes" rows="2" placeholder="Énergie, technique, ressenti…"></textarea><div class="actions"><button class="primary" onclick="saveSession()">Enregistrer la séance</button></div></section>`;
+}
+function toggleDone(i,j){let b=document.getElementById(`d${i}_${j}`);b.classList.toggle("done")}
+function saveSession(){let w=workouts[active],sets=[];w.items.forEach((it,i)=>{for(let j=0;j<it[1];j++){let kg=document.getElementById(`w${i}_${j}`).value,reps=document.getElementById(`r${i}_${j}`).value;if(kg||reps)sets.push({exercise:it[0],set:j+1,kg:kg||"",reps:reps||""})}});if(!sets.length){alert("Saisis au moins une charge ou un nombre de répétitions.");return}let cardioDuration=document.getElementById("sessionCardioDuration").value;let cardio={duration:cardioDuration,distance:document.getElementById("sessionCardioDistance").value,calories:document.getElementById("sessionCardioCalories").value,type:document.getElementById("sessionCardioType").value};data.sessions.push({id:Date.now(),date:document.getElementById("sessionDate").value,name:w.name,total:sets.length,sets,cardio,notes:document.getElementById("notes").value});persist();alert("Séance et cardio enregistrés sur cet appareil.");}
+function saveWeight(){let v=document.getElementById("weight").value;if(!v)return alert("Saisis ton poids.");data.weights.push({date:document.getElementById("weightDate").value||today(),value:Number(v)});persist();document.getElementById("weight").value=""}
+ 
+function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="my-gym-progress-sauvegarde.json";a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{data=JSON.parse(r.result);persist();alert("Sauvegarde importée.")}catch{alert("Fichier de sauvegarde invalide.")}};r.readAsText(f)}
+document.getElementById("weightDate").value=today();updateStats();render();
+</script></body></html>
